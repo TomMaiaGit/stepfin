@@ -1,0 +1,24 @@
+# Planejamento interno — somente local
+stepfin-planejamento/
+
+# Segredos
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Dependências e builds
+node_modules/
+dist/
+coverage/
+
+# Supabase temporário
+.supabase/
+supabase/.temp/
+
+# Sistema e logs
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.log
