@@ -1,0 +1,2 @@
+import { serve, json } from "../_shared/http.ts";
+serve(async(req)=>{const expected=Deno.env.get("EVOLUTION_WEBHOOK_SECRET");const supplied=req.headers.get("x-webhook-secret");if(!expected||supplied!==expected)return json({error:"Não autorizado"},401);const payload=await req.json();console.log("Evolution webhook",JSON.stringify({event:payload.event,instance:payload.instance,date_time:payload.date_time}));return json({received:true});});

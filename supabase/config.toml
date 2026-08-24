@@ -1,0 +1,18 @@
+project_id = "krroxebeytyzgtqvrgrd"
+
+[functions.ai-financial-assistant]
+verify_jwt = true
+[functions.send-invitation]
+verify_jwt = true
+[functions.process-receipt-ocr]
+verify_jwt = true
+[functions.parse-dda-boleto]
+verify_jwt = true
+[functions.import-spreadsheet]
+verify_jwt = true
+[functions.send-due-alerts]
+verify_jwt = false
+[functions.goal-progress-check]
+verify_jwt = false
+[functions.whatsapp-webhook]
+verify_jwt = false

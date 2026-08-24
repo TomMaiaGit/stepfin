@@ -1,22 +1,29 @@
 # StepFin
 
-Aplicação PWA de finanças pessoais e familiares, com frontend em React,
-TypeScript e Vite e backend no Supabase.
+PWA de finanças pessoais e familiares com grupos compartilhados, lançamentos,
+contas, cartões, caixinhas, relatórios e assistência financeira por IA.
 
 ## Stack
 
-- React + TypeScript + Vite
-- Tailwind CSS + shadcn/ui
-- Supabase: PostgreSQL, Auth, Storage, Edge Functions, Realtime e Cron
-- OpenRouter como provedor principal de IA e Groq como fallback
+- React 19, TypeScript e Vite;
+- PWA com service worker;
+- Supabase PostgreSQL, Auth, Storage e Edge Functions;
+- OpenRouter como IA principal e Groq como fallback;
+- Resend para e-mail e integração opcional com Evolution API.
 
-## Estado
+## Começar
 
-O projeto está na etapa de inicialização do código. O planejamento funcional e
-técnico é mantido localmente em `stepfin-planejamento/` e não é enviado ao
-repositório remoto.
+Copie `.env.example` para `.env.local`, preencha as variáveis publicáveis do
+Supabase e execute:
 
-## Segurança
+- `npm install`
+- `npm run dev`
 
-Use `.env.example` apenas como modelo. Nunca versione `.env.local`, tokens,
-senhas, chaves de service role ou secrets de integrações.
+Detalhes de banco, secrets e automações estão em [docs/SETUP.md](docs/SETUP.md).
+
+## Qualidade
+
+- `npm run lint`
+- `npm run build`
+
+Nunca versione `.env.local`, chaves de service role ou secrets de integrações.

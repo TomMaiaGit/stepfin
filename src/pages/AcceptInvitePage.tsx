@@ -1,0 +1,5 @@
+import { useEffect, useState } from "react"; import { Link, useSearchParams } from "react-router-dom"; import { ErrorMessage, PageHeader } from "../components/Ui"; import { supabase } from "../lib/supabase"; import { useAuth } from "../state/AuthContext";
+export function AcceptInvitePage(){const [params]=useSearchParams();const {refreshMembership}=useAuth();const [status,setStatus]=useState("Validando convite…");const [ok,setOk]=useState(false);
+ useEffect(()=>{const token=params.get("token");if(!token){setStatus("Token de convite ausente.");return;}supabase.rpc("accept_invitation",{token}).then(async({error})=>{if(error)setStatus(error.message);else{await refreshMembership();setOk(true);setStatus("Convite aceito. Você já pode acessar o grupo.");}});},[]);
+ return <div className="narrow"><PageHeader eyebrow="Convite" title="Entrar no grupo financeiro"/><div className="panel">{ok?<><p>{status}</p><Link className="button primary" to="/dashboard">Ir para visão geral</Link></>:<ErrorMessage>{status}</ErrorMessage>}</div></div>;
+}

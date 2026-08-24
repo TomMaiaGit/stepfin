@@ -11,6 +11,9 @@ stepfin-planejamento/
 node_modules/
 dist/
 coverage/
+*.tsbuildinfo
+vite.config.js
+vite.config.d.ts
 
 # Supabase temporário
 .supabase/
