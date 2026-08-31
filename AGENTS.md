@@ -7,9 +7,14 @@ ignorado pelo Git.
 Ordem mínima de consulta:
 
 1. `stepfin-planejamento/SKILL.md`
-2. `stepfin-planejamento/docs/ESTRUTURA.md`
-3. `stepfin-planejamento/docs/DEPARA.md`
-4. O documento funcional relacionado à tarefa
+2. `stepfin-planejamento/docs/MODELO_FINANCEIRO.md`
+3. `stepfin-planejamento/docs/ESTRUTURA.md`
+4. `stepfin-planejamento/docs/DEPARA.md`
+5. O documento funcional relacionado à tarefa
+
+O modelo financeiro aprovado prevalece sobre referências antigas a
+`fixed_expenses`: o nome atual é `recurrences`, integrado ao módulo único
+“Contas e recorrências”.
 
 O código versionado deve ficar em `src/`, `public/` e `supabase/`. O banco
 executável deve ser mantido em `supabase/migrations/`; o arquivo em

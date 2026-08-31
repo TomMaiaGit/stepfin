@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.15"
+    PostgrestVersion: "14.5"
   }
   public: {
     Tables: {
@@ -64,8 +64,13 @@ export type Database = {
       }
       bills: {
         Row: {
+          account_id: string | null
+          actual_amount: number | null
           amount: number
           barcode: string | null
+          card_id: string | null
+          category_id: string | null
+          competence: string | null
           created_at: string
           created_by: string
           description: string
@@ -73,14 +78,23 @@ export type Database = {
           due_date: string
           group_id: string
           id: string
+          notes: string | null
           paid_at: string | null
+          paid_transaction_id: string | null
+          payment_date: string | null
+          recurrence_id: string | null
           source_type: string
           status: string
           updated_at: string
         }
         Insert: {
+          account_id?: string | null
+          actual_amount?: number | null
           amount: number
           barcode?: string | null
+          card_id?: string | null
+          category_id?: string | null
+          competence?: string | null
           created_at?: string
           created_by: string
           description: string
@@ -88,14 +102,23 @@ export type Database = {
           due_date: string
           group_id: string
           id?: string
+          notes?: string | null
           paid_at?: string | null
+          paid_transaction_id?: string | null
+          payment_date?: string | null
+          recurrence_id?: string | null
           source_type?: string
           status?: string
           updated_at?: string
         }
         Update: {
+          account_id?: string | null
+          actual_amount?: number | null
           amount?: number
           barcode?: string | null
+          card_id?: string | null
+          category_id?: string | null
+          competence?: string | null
           created_at?: string
           created_by?: string
           description?: string
@@ -103,12 +126,37 @@ export type Database = {
           due_date?: string
           group_id?: string
           id?: string
+          notes?: string | null
           paid_at?: string | null
+          paid_transaction_id?: string | null
+          payment_date?: string | null
+          recurrence_id?: string | null
           source_type?: string
           status?: string
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "bills_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "financial_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bills_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "cards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bills_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "bills_created_by_fkey"
             columns: ["created_by"]
@@ -123,10 +171,25 @@ export type Database = {
             referencedRelation: "financial_groups"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "bills_paid_transaction_id_fkey"
+            columns: ["paid_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bills_recurrence_id_fkey"
+            columns: ["recurrence_id"]
+            isOneToOne: false
+            referencedRelation: "recurrences"
+            referencedColumns: ["id"]
+          },
         ]
       }
       caixinha_deposits: {
         Row: {
+          account_id: string | null
           amount: number
           caixinha_id: string
           created_at: string
@@ -137,6 +200,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          account_id?: string | null
           amount: number
           caixinha_id: string
           created_at?: string
@@ -147,6 +211,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          account_id?: string | null
           amount?: number
           caixinha_id?: string
           created_at?: string
@@ -157,6 +222,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "caixinha_deposits_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "financial_accounts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "caixinha_deposits_caixinha_id_fkey"
             columns: ["caixinha_id"]
@@ -219,30 +291,51 @@ export type Database = {
       }
       caixinhas: {
         Row: {
+          color: string
           created_at: string
           created_by: string
           current_balance: number
+          description: string | null
+          funding_account_id: string | null
+          goal_type: string
           group_id: string
+          icon: string | null
           id: string
+          is_active: boolean
           name: string
+          priority: number
           updated_at: string
         }
         Insert: {
+          color?: string
           created_at?: string
           created_by: string
           current_balance?: number
+          description?: string | null
+          funding_account_id?: string | null
+          goal_type?: string
           group_id: string
+          icon?: string | null
           id?: string
+          is_active?: boolean
           name: string
+          priority?: number
           updated_at?: string
         }
         Update: {
+          color?: string
           created_at?: string
           created_by?: string
           current_balance?: number
+          description?: string | null
+          funding_account_id?: string | null
+          goal_type?: string
           group_id?: string
+          icon?: string | null
           id?: string
+          is_active?: boolean
           name?: string
+          priority?: number
           updated_at?: string
         }
         Relationships: [
@@ -254,6 +347,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "caixinhas_funding_account_id_fkey"
+            columns: ["funding_account_id"]
+            isOneToOne: false
+            referencedRelation: "financial_accounts"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "caixinhas_group_id_fkey"
             columns: ["group_id"]
             isOneToOne: false
@@ -262,41 +362,136 @@ export type Database = {
           },
         ]
       }
+      card_invoices: {
+        Row: {
+          card_id: string
+          closing_date: string
+          created_at: string
+          due_date: string
+          group_id: string
+          id: string
+          paid_at: string | null
+          paid_transaction_id: string | null
+          payment_account_id: string | null
+          reference_month: string
+          status: string
+          total_amount: number
+          updated_at: string
+        }
+        Insert: {
+          card_id: string
+          closing_date: string
+          created_at?: string
+          due_date: string
+          group_id: string
+          id?: string
+          paid_at?: string | null
+          paid_transaction_id?: string | null
+          payment_account_id?: string | null
+          reference_month: string
+          status?: string
+          total_amount?: number
+          updated_at?: string
+        }
+        Update: {
+          card_id?: string
+          closing_date?: string
+          created_at?: string
+          due_date?: string
+          group_id?: string
+          id?: string
+          paid_at?: string | null
+          paid_transaction_id?: string | null
+          payment_account_id?: string | null
+          reference_month?: string
+          status?: string
+          total_amount?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "card_invoices_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "cards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "card_invoices_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "financial_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "card_invoices_paid_transaction_id_fkey"
+            columns: ["paid_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "card_invoices_payment_account_id_fkey"
+            columns: ["payment_account_id"]
+            isOneToOne: false
+            referencedRelation: "financial_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cards: {
         Row: {
+          brand: string | null
           card_type: string
           closing_day: number | null
+          color: string
           created_at: string
           credit_limit: number | null
           due_day: number | null
           group_id: string
           id: string
+          is_active: boolean
+          issuer: string | null
+          last_four: string | null
           name: string
           owner_member_id: string
+          payment_account_id: string | null
           updated_at: string
         }
         Insert: {
+          brand?: string | null
           card_type?: string
           closing_day?: number | null
+          color?: string
           created_at?: string
           credit_limit?: number | null
           due_day?: number | null
           group_id: string
           id?: string
+          is_active?: boolean
+          issuer?: string | null
+          last_four?: string | null
           name: string
           owner_member_id: string
+          payment_account_id?: string | null
           updated_at?: string
         }
         Update: {
+          brand?: string | null
           card_type?: string
           closing_day?: number | null
+          color?: string
           created_at?: string
           credit_limit?: number | null
           due_day?: number | null
           group_id?: string
           id?: string
+          is_active?: boolean
+          issuer?: string | null
+          last_four?: string | null
           name?: string
           owner_member_id?: string
+          payment_account_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -312,6 +507,13 @@ export type Database = {
             columns: ["owner_member_id"]
             isOneToOne: false
             referencedRelation: "group_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cards_payment_account_id_fkey"
+            columns: ["payment_account_id"]
+            isOneToOne: false
+            referencedRelation: "financial_accounts"
             referencedColumns: ["id"]
           },
         ]
@@ -357,6 +559,69 @@ export type Database = {
           },
         ]
       }
+      financial_accounts: {
+        Row: {
+          account_type: string
+          color: string
+          created_at: string
+          group_id: string
+          icon: string | null
+          id: string
+          include_in_available: boolean
+          initial_balance: number
+          institution: string | null
+          is_active: boolean
+          name: string
+          owner_member_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          account_type?: string
+          color?: string
+          created_at?: string
+          group_id: string
+          icon?: string | null
+          id?: string
+          include_in_available?: boolean
+          initial_balance?: number
+          institution?: string | null
+          is_active?: boolean
+          name: string
+          owner_member_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          account_type?: string
+          color?: string
+          created_at?: string
+          group_id?: string
+          icon?: string | null
+          id?: string
+          include_in_available?: boolean
+          initial_balance?: number
+          institution?: string | null
+          is_active?: boolean
+          name?: string
+          owner_member_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_accounts_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "financial_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_accounts_owner_member_id_fkey"
+            columns: ["owner_member_id"]
+            isOneToOne: false
+            referencedRelation: "group_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       financial_groups: {
         Row: {
           created_at: string
@@ -385,67 +650,6 @@ export type Database = {
             columns: ["owner_id"]
             isOneToOne: false
             referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      fixed_expenses: {
-        Row: {
-          amount: number
-          category_id: string | null
-          created_at: string
-          created_by: string
-          description: string
-          group_id: string
-          id: string
-          is_active: boolean
-          recurrence_day: number
-          updated_at: string
-        }
-        Insert: {
-          amount: number
-          category_id?: string | null
-          created_at?: string
-          created_by: string
-          description: string
-          group_id: string
-          id?: string
-          is_active?: boolean
-          recurrence_day: number
-          updated_at?: string
-        }
-        Update: {
-          amount?: number
-          category_id?: string | null
-          created_at?: string
-          created_by?: string
-          description?: string
-          group_id?: string
-          id?: string
-          is_active?: boolean
-          recurrence_day?: number
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "fixed_expenses_category_id_fkey"
-            columns: ["category_id"]
-            isOneToOne: false
-            referencedRelation: "categories"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fixed_expenses_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "group_members"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fixed_expenses_group_id_fkey"
-            columns: ["group_id"]
-            isOneToOne: false
-            referencedRelation: "financial_groups"
             referencedColumns: ["id"]
           },
         ]
@@ -684,6 +888,111 @@ export type Database = {
         }
         Relationships: []
       }
+      recurrences: {
+        Row: {
+          account_id: string | null
+          amount: number
+          amount_mode: string
+          auto_generate: boolean
+          card_id: string | null
+          category_id: string | null
+          created_at: string
+          created_by: string
+          description: string
+          end_date: string | null
+          frequency: string
+          group_id: string
+          id: string
+          is_active: boolean
+          next_due_date: string | null
+          payment_method: string | null
+          recurrence_day: number
+          recurrence_type: string
+          start_date: string
+          updated_at: string
+        }
+        Insert: {
+          account_id?: string | null
+          amount: number
+          amount_mode?: string
+          auto_generate?: boolean
+          card_id?: string | null
+          category_id?: string | null
+          created_at?: string
+          created_by: string
+          description: string
+          end_date?: string | null
+          frequency?: string
+          group_id: string
+          id?: string
+          is_active?: boolean
+          next_due_date?: string | null
+          payment_method?: string | null
+          recurrence_day: number
+          recurrence_type?: string
+          start_date?: string
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string | null
+          amount?: number
+          amount_mode?: string
+          auto_generate?: boolean
+          card_id?: string | null
+          category_id?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string
+          end_date?: string | null
+          frequency?: string
+          group_id?: string
+          id?: string
+          is_active?: boolean
+          next_due_date?: string | null
+          payment_method?: string | null
+          recurrence_day?: number
+          recurrence_type?: string
+          start_date?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fixed_expenses_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fixed_expenses_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "group_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fixed_expenses_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "financial_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recurrences_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "financial_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recurrences_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "cards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       spreadsheet_imports: {
         Row: {
           created_at: string
@@ -785,57 +1094,91 @@ export type Database = {
       }
       transactions: {
         Row: {
+          account_id: string | null
           amount: number
           card_id: string | null
           category_id: string | null
           created_at: string
           description: string
+          destination_account_id: string | null
           entry_method: string
           group_id: string
           id: string
+          installment_count: number | null
+          installment_number: number | null
+          invoice_id: string | null
           is_shared: boolean
           kind: string
           member_id: string
+          notes: string | null
+          payment_method: string | null
           receipt_file_path: string | null
           source_import_id: string | null
+          status: string
           transaction_date: string
+          transfer_key: string | null
           updated_at: string
         }
         Insert: {
+          account_id?: string | null
           amount: number
           card_id?: string | null
           category_id?: string | null
           created_at?: string
           description: string
+          destination_account_id?: string | null
           entry_method?: string
           group_id: string
           id?: string
+          installment_count?: number | null
+          installment_number?: number | null
+          invoice_id?: string | null
           is_shared?: boolean
           kind?: string
           member_id: string
+          notes?: string | null
+          payment_method?: string | null
           receipt_file_path?: string | null
           source_import_id?: string | null
+          status?: string
           transaction_date: string
+          transfer_key?: string | null
           updated_at?: string
         }
         Update: {
+          account_id?: string | null
           amount?: number
           card_id?: string | null
           category_id?: string | null
           created_at?: string
           description?: string
+          destination_account_id?: string | null
           entry_method?: string
           group_id?: string
           id?: string
+          installment_count?: number | null
+          installment_number?: number | null
+          invoice_id?: string | null
           is_shared?: boolean
           kind?: string
           member_id?: string
+          notes?: string | null
+          payment_method?: string | null
           receipt_file_path?: string | null
           source_import_id?: string | null
+          status?: string
           transaction_date?: string
+          transfer_key?: string | null
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "transactions_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "financial_accounts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "transactions_card_id_fkey"
             columns: ["card_id"]
@@ -851,10 +1194,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "transactions_destination_account_id_fkey"
+            columns: ["destination_account_id"]
+            isOneToOne: false
+            referencedRelation: "financial_accounts"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "transactions_group_id_fkey"
             columns: ["group_id"]
             isOneToOne: false
             referencedRelation: "financial_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "card_invoices"
             referencedColumns: ["id"]
           },
           {
@@ -880,6 +1237,18 @@ export type Database = {
     Functions: {
       accept_invitation: { Args: { token: string }; Returns: string }
       create_financial_group: { Args: { group_name: string }; Returns: string }
+      generate_recurrence_bills: { Args: { p_until?: string }; Returns: number }
+      get_account_balances: {
+        Args: { p_group_id: string }
+        Returns: {
+          account_type: string
+          balance: number
+          color: string
+          id: string
+          include_in_available: boolean
+          name: string
+        }[]
+      }
       get_group_dashboard: {
         Args: { group_id: string; month: string }
         Returns: Json
@@ -888,10 +1257,20 @@ export type Database = {
       is_group_member: { Args: { p_group_id: string }; Returns: boolean }
       is_group_owner: { Args: { p_group_id: string }; Returns: boolean }
       mark_bill_paid: {
-        Args: { bill_id: string }
+        Args: {
+          bill_id: string
+          p_account_id: string
+          p_actual_amount?: number
+          p_payment_date?: string
+        }
         Returns: {
+          account_id: string | null
+          actual_amount: number | null
           amount: number
           barcode: string | null
+          card_id: string | null
+          category_id: string | null
+          competence: string | null
           created_at: string
           created_by: string
           description: string
@@ -899,7 +1278,11 @@ export type Database = {
           due_date: string
           group_id: string
           id: string
+          notes: string | null
           paid_at: string | null
+          paid_transaction_id: string | null
+          payment_date: string | null
+          recurrence_id: string | null
           source_type: string
           status: string
           updated_at: string
@@ -907,6 +1290,34 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "bills"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      pay_card_invoice: {
+        Args: {
+          p_account_id: string
+          p_invoice_id: string
+          p_payment_date?: string
+        }
+        Returns: {
+          card_id: string
+          closing_date: string
+          created_at: string
+          due_date: string
+          group_id: string
+          id: string
+          paid_at: string | null
+          paid_transaction_id: string | null
+          payment_account_id: string | null
+          reference_month: string
+          status: string
+          total_amount: number
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "card_invoices"
           isOneToOne: true
           isSetofReturn: false
         }
@@ -1052,4 +1463,3 @@ export const Constants = {
     Enums: {},
   },
 } as const
-
