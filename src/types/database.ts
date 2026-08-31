@@ -62,6 +62,57 @@ export type Database = {
           },
         ]
       }
+      audit_logs: {
+        Row: {
+          action: string
+          actor_user_id: string | null
+          created_at: string
+          entity_id: string
+          entity_type: string
+          group_id: string
+          id: number
+          new_data: Json | null
+          old_data: Json | null
+        }
+        Insert: {
+          action: string
+          actor_user_id?: string | null
+          created_at?: string
+          entity_id: string
+          entity_type: string
+          group_id: string
+          id?: never
+          new_data?: Json | null
+          old_data?: Json | null
+        }
+        Update: {
+          action?: string
+          actor_user_id?: string | null
+          created_at?: string
+          entity_id?: string
+          entity_type?: string
+          group_id?: string
+          id?: never
+          new_data?: Json | null
+          old_data?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_logs_actor_user_id_fkey"
+            columns: ["actor_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_logs_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "financial_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bills: {
         Row: {
           account_id: string | null
@@ -82,6 +133,7 @@ export type Database = {
           paid_at: string | null
           paid_transaction_id: string | null
           payment_date: string | null
+          payment_receipt_path: string | null
           recurrence_id: string | null
           source_type: string
           status: string
@@ -106,6 +158,7 @@ export type Database = {
           paid_at?: string | null
           paid_transaction_id?: string | null
           payment_date?: string | null
+          payment_receipt_path?: string | null
           recurrence_id?: string | null
           source_type?: string
           status?: string
@@ -130,6 +183,7 @@ export type Database = {
           paid_at?: string | null
           paid_transaction_id?: string | null
           payment_date?: string | null
+          payment_receipt_path?: string | null
           recurrence_id?: string | null
           source_type?: string
           status?: string
@@ -525,6 +579,7 @@ export type Database = {
           group_id: string | null
           icon: string | null
           id: string
+          is_active: boolean
           kind: string
           name: string
           updated_at: string
@@ -535,6 +590,7 @@ export type Database = {
           group_id?: string | null
           icon?: string | null
           id?: string
+          is_active?: boolean
           kind?: string
           name: string
           updated_at?: string
@@ -545,6 +601,7 @@ export type Database = {
           group_id?: string | null
           icon?: string | null
           id?: string
+          is_active?: boolean
           kind?: string
           name?: string
           updated_at?: string
@@ -1236,6 +1293,10 @@ export type Database = {
     }
     Functions: {
       accept_invitation: { Args: { token: string }; Returns: string }
+      calculate_account_balance: {
+        Args: { p_account_id: string; p_exclude_transaction?: string }
+        Returns: number
+      }
       create_financial_group: { Args: { group_name: string }; Returns: string }
       generate_recurrence_bills: { Args: { p_until?: string }; Returns: number }
       get_account_balances: {
@@ -1262,6 +1323,7 @@ export type Database = {
           p_account_id: string
           p_actual_amount?: number
           p_payment_date?: string
+          p_receipt_file_path?: string
         }
         Returns: {
           account_id: string | null
@@ -1282,6 +1344,7 @@ export type Database = {
           paid_at: string | null
           paid_transaction_id: string | null
           payment_date: string | null
+          payment_receipt_path: string | null
           recurrence_id: string | null
           source_type: string
           status: string
@@ -1330,6 +1393,17 @@ export type Database = {
           note?: string
         }
         Returns: string
+      }
+      transaction_account_effect: {
+        Args: {
+          p_account: string
+          p_amount: number
+          p_destination: string
+          p_kind: string
+          p_status: string
+          p_target: string
+        }
+        Returns: number
       }
     }
     Enums: {

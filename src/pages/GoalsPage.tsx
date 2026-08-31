@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useState } from "react";
-import { ArrowDown, ArrowUp, PiggyBank, Plus, Target } from "lucide-react";
+import { ArrowDown, ArrowUp, Pencil, PiggyBank, Plus, Target } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 import { Modal } from "../components/Modal";
 import { EmptyState, ErrorMessage, PageHeader } from "../components/Ui";
@@ -90,6 +90,7 @@ export function GoalDetailPage() {
   const [goal, setGoal] = useState<any>(null);
   const [moves, setMoves] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const [error, setError] = useState("");
   const refresh = async () => {
     if (!id) return;
@@ -109,11 +110,18 @@ export function GoalDetailPage() {
     });
     if (error) return setError(error.message); setOpen(false); await refresh();
   }
+  async function edit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault(); const f = new FormData(e.currentTarget);
+    const boxResult = await supabase.from("caixinhas").update({ name: String(f.get("name")), description: String(f.get("description") || "") || null, color: String(f.get("color")), is_active: f.get("active") === "on" }).eq("id", id ?? "");
+    if (boxResult.error) return setError(boxResult.error.message);
+    if (goal) { const goalResult = await supabase.from("caixinha_goals").update({ goal_name: String(f.get("name")), target_amount: Number(f.get("target")), target_date: String(f.get("date") || "") || null }).eq("id", goal.id); if (goalResult.error) return setError(goalResult.error.message); }
+    setEditOpen(false); await refresh();
+  }
   if (!box) return <div className="loading"><span /></div>;
   const progress = goal ? Math.min(100, Number(box.current_balance) / Number(goal.target_amount) * 100) : 0;
   return <>
     <PageHeader eyebrow={goalLabels[box.goal_type ?? "other"] ?? "Objetivo"} title={box.name} description={box.description || "Acompanhe cada passo do objetivo."}
-      action={<button className="button primary" onClick={() => setOpen(true)}><Plus />Movimentar</button>} />
+      action={<div className="list-actions"><button className="button ghost" onClick={() => setEditOpen(true)}><Pencil />Editar</button><button className="button primary" onClick={() => setOpen(true)}><Plus />Movimentar</button></div>} />
     <section className="panel goal-hero"><strong>{money.format(Number(box.current_balance))}</strong>
       {goal && <><p>de {money.format(goal.target_amount)} • {Math.round(progress)}%</p><div className="progress large"><i style={{ width: `${progress}%`, background: box.color }} /></div>{goal.monthly_target && <small>Aporte sugerido: {money.format(goal.monthly_target)} por mês</small>}</>}
     </section>
@@ -127,6 +135,7 @@ export function GoalDetailPage() {
       <div className="two-cols"><label>Valor<input name="amount" type="number" step=".01" min=".01" required /></label><label>Data<input name="date" type="date" defaultValue={new Date().toISOString().slice(0, 10)} required /></label></div>
       <label>Observação<input name="note" /></label>{error && <ErrorMessage>{error}</ErrorMessage>}<button className="button primary">Confirmar</button>
     </form></Modal>}
+    {editOpen && <Modal title="Editar caixinha e objetivo" onClose={() => setEditOpen(false)}><form className="form-grid" onSubmit={edit}><label>Nome<input name="name" required defaultValue={box.name} /></label><label>Descrição<textarea name="description" defaultValue={box.description ?? ""} /></label>{goal && <div className="two-cols"><label>Valor-alvo<input name="target" type="number" min=".01" step=".01" defaultValue={goal.target_amount} required /></label><label>Prazo<input name="date" type="date" defaultValue={goal.target_date ?? ""} /></label></div>}<label>Cor<input name="color" type="color" defaultValue={box.color} /></label><label className="check-row"><input name="active" type="checkbox" defaultChecked={box.is_active} />Caixinha ativa</label>{error && <ErrorMessage>{error}</ErrorMessage>}<button className="button primary">Salvar alterações</button></form></Modal>}
   </>;
 }
 

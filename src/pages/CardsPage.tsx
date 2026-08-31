@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useState } from "react";
-import { Check, CreditCard, Plus } from "lucide-react";
+import { Check, CreditCard, Pencil, Plus } from "lucide-react";
 import { Modal } from "../components/Modal";
 import { EmptyState, ErrorMessage, PageHeader } from "../components/Ui";
 import { money, shortDate } from "../lib/format";
@@ -25,17 +25,16 @@ export function CardsPage() {
   };
   useEffect(() => { void refresh(); }, [membership]);
 
-  async function addCard(e: FormEvent<HTMLFormElement>) {
+  async function saveCard(e: FormEvent<HTMLFormElement>) {
     e.preventDefault(); if (!membership) return; const f = new FormData(e.currentTarget);
-    const { error } = await supabase.from("cards").insert({
-      group_id: membership.group_id, owner_member_id: membership.id, name: String(f.get("name")),
+    const values = { name: String(f.get("name")),
       card_type: "credit", issuer: String(f.get("issuer") || "") || null,
       last_four: String(f.get("lastFour") || "") || null, brand: String(f.get("brand") || "") || null,
       closing_day: Number(f.get("closing")), due_day: Number(f.get("due")),
       credit_limit: Number(f.get("limit")), payment_account_id: String(f.get("account") || "") || null,
-      color: String(f.get("color")), is_active: true
-    });
-    if (error) return setError(error.message); setModal(null); await refresh();
+      color: String(f.get("color")), is_active: true };
+    const result = selected?.card_type ? await supabase.from("cards").update(values).eq("id", selected.id) : await supabase.from("cards").insert({ ...values, group_id: membership.group_id, owner_member_id: membership.id });
+    if (result.error) return setError(result.error.message); setModal(null); setSelected(null); await refresh();
   }
   async function payInvoice(e: FormEvent<HTMLFormElement>) {
     e.preventDefault(); const f = new FormData(e.currentTarget);
@@ -47,7 +46,7 @@ export function CardsPage() {
   return <>
     <PageHeader eyebrow="Crédito sob controle" title="Cartões"
       description="Compras entram na fatura; o saldo da conta muda somente no pagamento."
-      action={<button className="button primary" onClick={() => setModal("card")}><Plus />Novo cartão</button>} />
+      action={<button className="button primary" onClick={() => { setSelected(null); setModal("card"); }}><Plus />Novo cartão</button>} />
     <div className="card-grid">{cards.length ? cards.map(card => {
       const openInvoices = invoices.filter(item => item.card_id === card.id && item.status !== "paid");
       const used = openInvoices.reduce((sum, item) => sum + Number(item.total_amount), 0);
@@ -57,7 +56,7 @@ export function CardsPage() {
         <h2>{card.name}</h2><p>•••• {card.last_four || "0000"}</p>
         <div className="limit-line"><span>Usado {money.format(used)}</span><span>Disponível {money.format(Math.max(0, limit - used))}</span></div>
         <div className="progress"><i style={{ width: `${limit ? Math.min(100, used / limit * 100) : 0}%` }} /></div>
-        <small>Fecha dia {card.closing_day} • vence dia {card.due_day}</small>
+        <small>Fecha dia {card.closing_day} • vence dia {card.due_day}</small><button className="card-edit" title="Editar cartão" onClick={() => { setSelected(card); setModal("card"); }}><Pencil /></button>
       </article>;
     }) : <div className="panel span-all"><EmptyState icon={<CreditCard />} title="Nenhum cartão cadastrado" text="Cadastre um cartão para associar compras e acompanhar faturas." /></div>}</div>
 
@@ -68,13 +67,13 @@ export function CardsPage() {
       </article>)}
     </div></section>}
 
-    {modal === "card" && <Modal title="Novo cartão" onClose={() => setModal(null)}><form className="form-grid" onSubmit={addCard}>
-      <label>Nome do cartão<input name="name" required placeholder="Ex.: Nubank Roxinho" /></label>
-      <div className="two-cols"><label>Instituição<input name="issuer" /></label><label>Últimos 4 dígitos<input name="lastFour" inputMode="numeric" minLength={4} maxLength={4} /></label></div>
-      <div className="two-cols"><label>Bandeira<input name="brand" placeholder="Mastercard" /></label><label>Limite<input name="limit" type="number" step=".01" min="0" required /></label></div>
-      <div className="two-cols"><label>Fechamento<input name="closing" type="number" min="1" max="31" required /></label><label>Vencimento<input name="due" type="number" min="1" max="31" required /></label></div>
-      <label>Conta para pagar a fatura<select name="account"><option value="">Definir depois</option>{accounts.map(account => <option value={account.id} key={account.id}>{account.name}</option>)}</select></label>
-      <label>Cor<input name="color" type="color" defaultValue="#6f5bd3" /></label>{error && <ErrorMessage>{error}</ErrorMessage>}<button className="button primary">Salvar cartão</button>
+    {modal === "card" && <Modal title={selected ? "Editar cartão" : "Novo cartão"} onClose={() => { setModal(null); setSelected(null); }}><form className="form-grid" onSubmit={saveCard}>
+      <label>Nome do cartão<input name="name" required placeholder="Ex.: Nubank Roxinho" defaultValue={selected?.name} /></label>
+      <div className="two-cols"><label>Instituição<input name="issuer" defaultValue={selected?.issuer ?? ""} /></label><label>Últimos 4 dígitos<input name="lastFour" inputMode="numeric" minLength={4} maxLength={4} defaultValue={selected?.last_four ?? ""} /></label></div>
+      <div className="two-cols"><label>Bandeira<input name="brand" placeholder="Mastercard" defaultValue={selected?.brand ?? ""} /></label><label>Limite<input name="limit" type="number" step=".01" min="0" required defaultValue={selected?.credit_limit ?? 0} /></label></div>
+      <div className="two-cols"><label>Fechamento<input name="closing" type="number" min="1" max="31" required defaultValue={selected?.closing_day} /></label><label>Vencimento<input name="due" type="number" min="1" max="31" required defaultValue={selected?.due_day} /></label></div>
+      <label>Conta para pagar a fatura<select name="account" defaultValue={selected?.payment_account_id ?? ""}><option value="">Definir depois</option>{accounts.map(account => <option value={account.id} key={account.id}>{account.name}</option>)}</select></label>
+      <label>Cor<input name="color" type="color" defaultValue={selected?.color ?? "#6f5bd3"} /></label>{error && <ErrorMessage>{error}</ErrorMessage>}<button className="button primary">Salvar cartão</button>
     </form></Modal>}
     {modal === "pay" && <Modal title="Pagar fatura" description="O pagamento reduz a conta, sem duplicar as despesas das compras." onClose={() => setModal(null)}><form className="form-grid" onSubmit={payInvoice}>
       <label>Conta utilizada<select name="account" required><option value="">Selecione</option>{accounts.map(account => <option value={account.id} key={account.id}>{account.name}</option>)}</select></label>
