@@ -31,7 +31,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!auth.user) return setMembership(null);
     const { data } = await supabase.from("group_members")
       .select("id, group_id, role, permission_level, financial_groups(id, name, owner_id)")
-      .eq("user_id", auth.user.id).limit(1).maybeSingle();
+      .eq("user_id", auth.user.id).eq("is_active", true).limit(1).maybeSingle();
     setMembership(data as Membership | null);
   };
 

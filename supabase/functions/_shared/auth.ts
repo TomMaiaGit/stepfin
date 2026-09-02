@@ -16,7 +16,7 @@ export async function requireUser(req: Request) {
 }
 export async function requireMembership(req: Request, groupId: string, write = false) {
   const context = await requireUser(req);
-  const { data } = await context.admin.from("group_members").select("id,permission_level,role").eq("group_id", groupId).eq("user_id", context.user.id).single();
+  const { data } = await context.admin.from("group_members").select("id,permission_level,role").eq("group_id", groupId).eq("user_id", context.user.id).eq("is_active", true).single();
   if (!data || (write && data.permission_level !== "read_write")) throw new Error("Sem permissão para este grupo");
   return { ...context, membership: data };
 }

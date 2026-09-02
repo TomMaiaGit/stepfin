@@ -29,6 +29,16 @@ As migrations ficam em `supabase/migrations`. O schema possui 17 tabelas com
 RLS, RPCs transacionais e três buckets privados. O histórico local está
 alinhado às versões aplicadas no projeto remoto.
 
+## Membros e convites
+
+O titular pode reenviar ou cancelar convites pendentes e remover o acesso de
+membros. A remoção é lógica: o vínculo fica inativo e o histórico financeiro é
+preservado. Um convite aceito posteriormente reativa o vínculo existente.
+
+O reenvio renova o token e a validade por sete dias. Para entregar o e-mail,
+configure `RESEND_API_KEY`, `RESEND_FROM` e `APP_URL` nas secrets das Edge
+Functions. Em produção, `APP_URL` deve apontar para `https://stepfin.pages.dev`.
+
 ## Automações
 
 As funções `send-due-alerts` e `goal-progress-check` validam o cabeçalho

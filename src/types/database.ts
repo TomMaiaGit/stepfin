@@ -770,8 +770,10 @@ export type Database = {
           created_at: string
           group_id: string
           id: string
+          is_active: boolean
           joined_at: string
           permission_level: string
+          removed_at: string | null
           role: string
           updated_at: string
           user_id: string
@@ -780,8 +782,10 @@ export type Database = {
           created_at?: string
           group_id: string
           id?: string
+          is_active?: boolean
           joined_at?: string
           permission_level?: string
+          removed_at?: string | null
           role?: string
           updated_at?: string
           user_id: string
@@ -790,8 +794,10 @@ export type Database = {
           created_at?: string
           group_id?: string
           id?: string
+          is_active?: boolean
           joined_at?: string
           permission_level?: string
+          removed_at?: string | null
           role?: string
           updated_at?: string
           user_id?: string
@@ -1297,6 +1303,27 @@ export type Database = {
         Args: { p_account_id: string; p_exclude_transaction?: string }
         Returns: number
       }
+      cancel_group_invitation: {
+        Args: { p_invitation_id: string }
+        Returns: {
+          created_at: string
+          expires_at: string
+          group_id: string
+          id: string
+          invited_by: string
+          invited_email: string
+          permission_level: string
+          status: string
+          token: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "group_invitations"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       create_financial_group: { Args: { group_name: string }; Returns: string }
       generate_recurrence_bills: { Args: { p_until?: string }; Returns: number }
       get_account_balances: {
@@ -1393,6 +1420,27 @@ export type Database = {
           note?: string
         }
         Returns: string
+      }
+      remove_group_member: {
+        Args: { p_member_id: string }
+        Returns: {
+          created_at: string
+          group_id: string
+          id: string
+          is_active: boolean
+          joined_at: string
+          permission_level: string
+          removed_at: string | null
+          role: string
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "group_members"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       transaction_account_effect: {
         Args: {
