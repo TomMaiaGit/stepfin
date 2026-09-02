@@ -35,9 +35,13 @@ O titular pode reenviar ou cancelar convites pendentes e remover o acesso de
 membros. A remoção é lógica: o vínculo fica inativo e o histórico financeiro é
 preservado. Um convite aceito posteriormente reativa o vínculo existente.
 
-O reenvio renova o token e a validade por sete dias. Para entregar o e-mail,
-configure `RESEND_API_KEY`, `RESEND_FROM` e `APP_URL` nas secrets das Edge
-Functions. Em produção, `APP_URL` deve apontar para `https://stepfin.pages.dev`.
+O botão **Copiar link** renova o token e a validade por sete dias. O titular
+pode enviar esse link manualmente pelo WhatsApp; somente uma conta autenticada
+com o e-mail convidado poderá aceitá-lo. Essa modalidade requer apenas
+`APP_URL=https://stepfin.pages.dev` nas secrets das Edge Functions.
+
+O envio automático por e-mail permanece opcional. Quando houver domínio
+próprio verificado, configure também `RESEND_API_KEY` e `RESEND_FROM`.
 
 ## Automações
 
