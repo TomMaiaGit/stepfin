@@ -50,6 +50,18 @@ As funções `send-due-alerts` e `goal-progress-check` validam o cabeçalho
 WhatsApp é opcional e permanece desabilitado até a configuração da Evolution
 API e de um número remetente.
 
+## Linguagem financeira e anexos
+
+- **Saldos:** contas financeiras onde o dinheiro existe.
+- **Lançamentos:** receitas, despesas e transferências realizadas ou previstas.
+- **Compromissos:** obrigações únicas com vencimento futuro.
+- **Recorrências:** modelos que geram compromissos repetidos.
+
+Despesas diretas aceitam evidência ou comprovante opcional em JPG, PNG, WebP
+ou PDF de até 10 MB. Os arquivos ficam no bucket privado **receipts**, são
+abertos por URL assinada temporária e podem ser substituídos ou removidos na
+edição. Se o lançamento falhar, o upload recém-criado também é removido.
+
 ## Validação antes de publicar
 
 Execute `npm run lint` e `npm run build`.

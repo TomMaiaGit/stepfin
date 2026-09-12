@@ -7,6 +7,7 @@ import "./styles.css";
 import "./enhancements.css";
 import "./adaptations.css";
 import "./brand.css";
+import "./attachments.css";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

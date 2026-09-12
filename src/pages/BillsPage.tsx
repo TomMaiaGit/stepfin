@@ -1,30 +1,148 @@
 import { FormEvent, useCallback, useEffect, useState } from "react";
-import { CalendarClock, Check, Paperclip, Pencil, Plus, Repeat2 } from "lucide-react";
+import { CalendarClock, Check, Pencil, Plus, Repeat2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Modal } from "../components/Modal";
+import { ReceiptPreview } from "../components/ReceiptPreview";
 import { EmptyState, ErrorMessage, PageHeader } from "../components/Ui";
 import { loadFinanceOptions } from "../hooks/useFinanceData";
 import { money, shortDate } from "../lib/format";
+import { receiptAccept, removeReceipt, uploadReceipt } from "../lib/receipts";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../state/AuthContext";
 
 const today = new Date().toISOString().slice(0, 10);
-export function BillsPage() {
-  const { membership } = useAuth(); const [bills, setBills] = useState<any[]>([]); const [recurrences, setRecurrences] = useState<any[]>([]); const [options, setOptions] = useState<any>({ accounts: [], cards: [], categories: [] }); const [tab, setTab] = useState("bills"); const [modal, setModal] = useState<string | null>(null); const [selected, setSelected] = useState<any>(null); const [error, setError] = useState(""); const [filters, setFilters] = useState({ from: today.slice(0, 8) + "01", to: "", category: "", search: "" });
-  const refresh = useCallback(async () => { if (!membership) return; let q = supabase.from("bills").select("*").eq("group_id", membership.group_id).order("due_date"); if (filters.from) q = q.gte("due_date", filters.from); if (filters.to) q = q.lte("due_date", filters.to); if (filters.category) q = q.eq("category_id", filters.category); if (filters.search) q = q.ilike("description", `%${filters.search}%`); const [b, r, o] = await Promise.all([q, supabase.from("recurrences").select("*").eq("group_id", membership.group_id).order("description"), loadFinanceOptions(membership.group_id)]); setBills(b.data ?? []); setRecurrences(r.data ?? []); setOptions(o); }, [membership, filters]);
-  useEffect(() => { void refresh(); }, [refresh]);
-  async function saveBill(e: FormEvent<HTMLFormElement>) { e.preventDefault(); if (!membership) return; const f = new FormData(e.currentTarget); const values = { description: String(f.get("description")), amount: Number(f.get("amount")), due_date: String(f.get("due")), category_id: String(f.get("category") || "") || null, account_id: String(f.get("account") || "") || null, notes: String(f.get("notes") || "") || null }; const result = selected ? await supabase.from("bills").update(values).eq("id", selected.id) : await supabase.from("bills").insert({ ...values, group_id: membership.group_id, created_by: membership.id, source_type: "manual", status: "pending" }); if (result.error) return setError(result.error.message); close(); await refresh(); }
-  async function addRecurrence(e: FormEvent<HTMLFormElement>) { e.preventDefault(); if (!membership) return; const f = new FormData(e.currentTarget); const due = String(f.get("start")); const values = { description: String(f.get("description")), amount: Number(f.get("amount")), recurrence_day: new Date(due + "T12:00:00").getDate(), recurrence_type: String(f.get("type")), frequency: String(f.get("frequency")), amount_mode: String(f.get("amountMode")), start_date: due, next_due_date: due, category_id: String(f.get("category") || "") || null, account_id: String(f.get("account") || "") || null, card_id: String(f.get("card") || "") || null, is_active: true, auto_generate: true }; const result = selected ? await supabase.from("recurrences").update(values).eq("id", selected.id) : await supabase.from("recurrences").insert({ ...values, group_id: membership.group_id, created_by: membership.id }); if (result.error) return setError(result.error.message); if (!selected) await supabase.rpc("generate_recurrence_bills", {}); close(); await refresh(); }
-  async function pay(e: FormEvent<HTMLFormElement>) { e.preventDefault(); if (!membership || !selected) return; const f = new FormData(e.currentTarget); const file = f.get("receipt") as File; let path: string | null = null; if (file?.size) { if (file.size > 10 * 1024 * 1024) return setError("O comprovante deve ter no máximo 10 MB."); if (!['image/jpeg','image/png','image/webp','application/pdf'].includes(file.type)) return setError("Envie JPG, PNG, WebP ou PDF."); path = `${membership.group_id}/${selected.id}/${crypto.randomUUID()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "-")}`; const upload = await supabase.storage.from("receipts").upload(path, file); if (upload.error) return setError(upload.error.message); }
-    const { error } = await supabase.rpc("mark_bill_paid", { bill_id: selected.id, p_account_id: String(f.get("account")), p_actual_amount: Number(f.get("amount")), p_payment_date: String(f.get("date")), p_receipt_file_path: path ?? undefined }); if (error) { if (path) await supabase.storage.from("receipts").remove([path]); return setError(error.message); } close(); await refresh(); }
-  function close() { setModal(null); setSelected(null); setError(""); }
-  const visible = tab === "paid" ? bills.filter(x => x.status === "paid") : bills.filter(x => !["paid", "cancelled"].includes(x.status));
-  return <><PageHeader eyebrow="Planejamento e vencimentos" title="Contas e recorrências" description="Pesquise vencimentos, edite dados e anexe comprovantes ao pagar." action={<button className="button primary" onClick={() => { setSelected(null); setModal(tab === "recurrences" ? "recurrence" : "bill"); }}><Plus />{tab === "recurrences" ? "Nova recorrência" : "Nova conta"}</button>} />
-    <div className="tabs"><button className={tab === "bills" ? "active" : ""} onClick={() => setTab("bills")}>A pagar</button><button className={tab === "paid" ? "active" : ""} onClick={() => setTab("paid")}>Pagas</button><button className={tab === "recurrences" ? "active" : ""} onClick={() => setTab("recurrences")}>Recorrências</button></div>
-    {tab !== "recurrences" && <section className="panel filter-panel"><div className="filter-grid"><label>Vence de<input type="date" value={filters.from} onChange={e => setFilters({ ...filters, from: e.target.value })} /></label><label>Até<input type="date" value={filters.to} onChange={e => setFilters({ ...filters, to: e.target.value })} /></label><label>Categoria<select value={filters.category} onChange={e => setFilters({ ...filters, category: e.target.value })}><option value="">Todas</option>{options.categories.map((x: any) => <option key={x.id} value={x.id}>{x.name}</option>)}</select></label><label>Buscar<input value={filters.search} onChange={e => setFilters({ ...filters, search: e.target.value })} /></label></div></section>}
-    <div className="panel">{tab === "recurrences" ? recurrences.length ? <div className="data-list">{recurrences.map(r => <article key={r.id}><span className="transaction-icon income"><Repeat2 /></span><div><strong>{r.description}</strong><small>{r.frequency} • {r.amount_mode}</small></div><div className="list-actions"><strong>{money.format(r.amount)}</strong><button className="icon-action" onClick={() => { setSelected(r); setModal("recurrence"); }}><Pencil /></button></div></article>)}</div> : <EmptyState icon={<Repeat2 />} title="Nenhuma recorrência" text="Cadastre seus compromissos repetidos." /> : visible.length ? <div className="data-list">{visible.map(b => <article key={b.id}><span className="transaction-icon"><CalendarClock /></span><div><strong>{b.description}</strong><small>Vence {shortDate(b.due_date)} • {b.status}</small></div><div className="list-actions">{b.payment_receipt_path && <ReceiptPreview path={b.payment_receipt_path} />}<strong>{money.format(b.actual_amount ?? b.amount)}</strong>{b.status !== "paid" && <button className="mini-button" onClick={() => { setSelected(b); setModal("pay"); }}><Check />Pagar</button>}<button className="icon-action" onClick={() => { setSelected(b); setModal("bill"); }}><Pencil /></button></div></article>)}</div> : <EmptyState icon={<CalendarClock />} title="Nenhuma conta encontrada" text="Altere o período ou cadastre uma conta." />}</div>
-    {(modal === "bill" || modal === "recurrence") && <Modal title={selected ? "Editar" : modal === "bill" ? "Nova conta" : "Nova recorrência"} onClose={close}><form className="form-grid" onSubmit={modal === "bill" ? saveBill : addRecurrence}><label>Descrição<input name="description" required defaultValue={selected?.description} /></label><div className="two-cols"><label>Valor<input name="amount" type="number" step=".01" min=".01" required defaultValue={selected?.amount} /></label><label>{modal === "bill" ? "Vencimento" : "Primeiro vencimento"}<input name={modal === "bill" ? "due" : "start"} type="date" required defaultValue={modal === "bill" ? selected?.due_date : selected?.start_date} /></label></div>{modal === "recurrence" && <><div className="two-cols"><label>Tipo<select name="type" defaultValue={selected?.recurrence_type ?? "expense"}><option value="expense">Despesa</option><option value="income">Receita</option></select></label><label>Frequência<select name="frequency" defaultValue={selected?.frequency ?? "monthly"}><option value="monthly">Mensal</option><option value="weekly">Semanal</option><option value="yearly">Anual</option></select></label></div><input type="hidden" name="amountMode" value={selected?.amount_mode ?? "fixed"} /></>}<label>Categoria<select name="category" defaultValue={selected?.category_id ?? ""}><option value="">Sem categoria</option>{options.categories.filter((x: any) => x.is_active !== false).map((x: any) => <option value={x.id} key={x.id}>{x.name}</option>)}</select><Link className="field-link" to="/categories">+ Criar categoria</Link></label><label>Conta<select name="account" defaultValue={selected?.account_id ?? ""}><option value="">Definir depois</option>{options.accounts.map((x: any) => <option value={x.id} key={x.id}>{x.name}</option>)}</select></label>{modal === "recurrence" && <label>Cartão<select name="card" defaultValue={selected?.card_id ?? ""}><option value="">Nenhum</option>{options.cards.map((x: any) => <option value={x.id} key={x.id}>{x.name}</option>)}</select></label>}{modal === "bill" && <label>Observações<textarea name="notes" defaultValue={selected?.notes ?? ""} /></label>}{error && <ErrorMessage>{error}</ErrorMessage>}<button className="button primary">Salvar</button></form></Modal>}
-    {modal === "pay" && selected && <Modal title="Confirmar pagamento" description="O banco recusará a operação se o saldo for insuficiente." onClose={close}><form className="form-grid" onSubmit={pay}><label>Conta<select name="account" required><option value="">Selecione</option>{options.accounts.map((x: any) => <option key={x.id} value={x.id}>{x.name}</option>)}</select></label><div className="two-cols"><label>Valor<input name="amount" type="number" step=".01" min=".01" defaultValue={selected.amount} required /></label><label>Data<input name="date" type="date" defaultValue={today} required /></label></div><label>Comprovante opcional<input name="receipt" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" /></label><small className="form-note">JPG, PNG, WebP ou PDF, até 10 MB.</small>{error && <ErrorMessage>{error}</ErrorMessage>}<button className="button primary">Confirmar pagamento</button></form></Modal>}</>;
-}
 
-function ReceiptPreview({ path }: { path: string }) { const [url, setUrl] = useState(""); async function load() { if (!url) { const { data } = await supabase.storage.from("receipts").createSignedUrl(path, 60); setUrl(data?.signedUrl ?? ""); } } return <a className="receipt-preview" href={url || undefined} target="_blank" rel="noreferrer" onMouseEnter={() => void load()} onFocus={() => void load()} onClick={e => { if (!url) { e.preventDefault(); void load(); } }}><Paperclip />{url && /\.(png|jpe?g|webp)$/i.test(path) && <img src={url} alt="Comprovante" />}</a>; }
+export function BillsPage() {
+  const { membership } = useAuth();
+  const [bills, setBills] = useState<any[]>([]);
+  const [recurrences, setRecurrences] = useState<any[]>([]);
+  const [options, setOptions] = useState<any>({ accounts: [], cards: [], categories: [] });
+  const [tab, setTab] = useState("bills");
+  const [modal, setModal] = useState<string | null>(null);
+  const [selected, setSelected] = useState<any>(null);
+  const [error, setError] = useState("");
+  const [filters, setFilters] = useState({ from: today.slice(0, 8) + "01", to: "", category: "", search: "" });
+
+  const refresh = useCallback(async () => {
+    if (!membership) return;
+    let query = supabase.from("bills").select("*").eq("group_id", membership.group_id).order("due_date");
+    if (filters.from) query = query.gte("due_date", filters.from);
+    if (filters.to) query = query.lte("due_date", filters.to);
+    if (filters.category) query = query.eq("category_id", filters.category);
+    if (filters.search) query = query.ilike("description", `%${filters.search}%`);
+    const [billResult, recurrenceResult, financeOptions] = await Promise.all([
+      query,
+      supabase.from("recurrences").select("*").eq("group_id", membership.group_id).order("description"),
+      loadFinanceOptions(membership.group_id)
+    ]);
+    setBills(billResult.data ?? []);
+    setRecurrences(recurrenceResult.data ?? []);
+    setOptions(financeOptions);
+  }, [membership, filters]);
+
+  useEffect(() => { void refresh(); }, [refresh]);
+
+  async function saveBill(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!membership) return;
+    const form = new FormData(event.currentTarget);
+    const values = {
+      description: String(form.get("description")), amount: Number(form.get("amount")),
+      due_date: String(form.get("due")), category_id: String(form.get("category") || "") || null,
+      account_id: String(form.get("account") || "") || null, notes: String(form.get("notes") || "") || null
+    };
+    const result = selected
+      ? await supabase.from("bills").update(values).eq("id", selected.id)
+      : await supabase.from("bills").insert({ ...values, group_id: membership.group_id, created_by: membership.id, source_type: "manual", status: "pending" });
+    if (result.error) return setError(result.error.message);
+    close();
+    await refresh();
+  }
+
+  async function saveRecurrence(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!membership) return;
+    const form = new FormData(event.currentTarget);
+    const due = String(form.get("start"));
+    const values = {
+      description: String(form.get("description")), amount: Number(form.get("amount")),
+      recurrence_day: new Date(due + "T12:00:00").getDate(), recurrence_type: String(form.get("type")),
+      frequency: String(form.get("frequency")), amount_mode: String(form.get("amountMode")),
+      start_date: due, next_due_date: due, category_id: String(form.get("category") || "") || null,
+      account_id: String(form.get("account") || "") || null, card_id: String(form.get("card") || "") || null,
+      is_active: true, auto_generate: true
+    };
+    const result = selected
+      ? await supabase.from("recurrences").update(values).eq("id", selected.id)
+      : await supabase.from("recurrences").insert({ ...values, group_id: membership.group_id, created_by: membership.id });
+    if (result.error) return setError(result.error.message);
+    if (!selected) await supabase.rpc("generate_recurrence_bills", {});
+    close();
+    await refresh();
+  }
+
+  async function pay(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!membership || !selected) return;
+    const form = new FormData(event.currentTarget);
+    const file = form.get("receipt") as File;
+    let path: string | null = null;
+    if (file?.size) {
+      const upload = await uploadReceipt(membership.group_id, "bills", selected.id, file);
+      if (upload.error || !upload.path) return setError(upload.error);
+      path = upload.path;
+    }
+    const { error: paymentError } = await supabase.rpc("mark_bill_paid", {
+      bill_id: selected.id, p_account_id: String(form.get("account")),
+      p_actual_amount: Number(form.get("amount")), p_payment_date: String(form.get("date")),
+      p_receipt_file_path: path ?? undefined
+    });
+    if (paymentError) {
+      if (path) await removeReceipt(path);
+      return setError(paymentError.message);
+    }
+    close();
+    await refresh();
+  }
+
+  function close() { setModal(null); setSelected(null); setError(""); }
+  const visible = tab === "paid" ? bills.filter(item => item.status === "paid") : bills.filter(item => !["paid", "cancelled"].includes(item.status));
+
+  return <>
+    <PageHeader eyebrow="Planejamento e vencimentos" title="Compromissos e recorrências" description="Obrigações futuras ficam separadas das contas financeiras e das despesas já realizadas." action={<button className="button primary" onClick={() => { setSelected(null); setModal(tab === "recurrences" ? "recurrence" : "bill"); }}><Plus />{tab === "recurrences" ? "Nova recorrência" : "Novo compromisso"}</button>} />
+    <div className="tabs"><button className={tab === "bills" ? "active" : ""} onClick={() => setTab("bills")}>A vencer</button><button className={tab === "paid" ? "active" : ""} onClick={() => setTab("paid")}>Pagos</button><button className={tab === "recurrences" ? "active" : ""} onClick={() => setTab("recurrences")}>Recorrências</button></div>
+    {tab !== "recurrences" && <section className="panel filter-panel"><div className="filter-grid">
+      <label>Vence de<input type="date" value={filters.from} onChange={event => setFilters({ ...filters, from: event.target.value })} /></label>
+      <label>Até<input type="date" value={filters.to} onChange={event => setFilters({ ...filters, to: event.target.value })} /></label>
+      <label>Categoria<select value={filters.category} onChange={event => setFilters({ ...filters, category: event.target.value })}><option value="">Todas</option>{options.categories.map((item: any) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
+      <label>Buscar<input value={filters.search} onChange={event => setFilters({ ...filters, search: event.target.value })} placeholder="Descrição do compromisso" /></label>
+    </div></section>}
+    <div className="panel">{tab === "recurrences"
+      ? recurrences.length ? <div className="data-list">{recurrences.map(item => <article key={item.id}><span className="transaction-icon income"><Repeat2 /></span><div><strong>{item.description}</strong><small>{item.frequency} • {item.amount_mode}</small></div><div className="list-actions"><strong>{money.format(item.amount)}</strong><button className="icon-action" title="Editar recorrência" onClick={() => { setSelected(item); setModal("recurrence"); }}><Pencil /></button></div></article>)}</div> : <EmptyState icon={<Repeat2 />} title="Nenhuma recorrência" text="Cadastre compromissos que se repetem." />
+      : visible.length ? <div className="data-list">{visible.map(item => <article key={item.id}><span className="transaction-icon"><CalendarClock /></span><div><strong>{item.description}</strong><small>Vence {shortDate(item.due_date)} • {item.status}</small></div><div className="list-actions">{item.payment_receipt_path && <ReceiptPreview path={item.payment_receipt_path} label="Comprovante de pagamento" />}<strong>{money.format(item.actual_amount ?? item.amount)}</strong>{item.status !== "paid" && <button className="mini-button" onClick={() => { setSelected(item); setModal("pay"); }}><Check />Pagar</button>}<button className="icon-action" title="Editar compromisso" onClick={() => { setSelected(item); setModal("bill"); }}><Pencil /></button></div></article>)}</div>
+      : <EmptyState icon={<CalendarClock />} title="Nenhum compromisso encontrado" text="Altere o período ou registre uma obrigação futura." />}</div>
+
+    {(modal === "bill" || modal === "recurrence") && <Modal title={selected ? "Editar" : modal === "bill" ? "Novo compromisso" : "Nova recorrência"} onClose={close}>
+      <form className="form-grid" onSubmit={modal === "bill" ? saveBill : saveRecurrence}>
+        <label>Descrição<input name="description" required defaultValue={selected?.description} /></label>
+        <div className="two-cols"><label>Valor<input name="amount" type="number" step=".01" min=".01" required defaultValue={selected?.amount} /></label><label>{modal === "bill" ? "Vencimento" : "Primeiro vencimento"}<input name={modal === "bill" ? "due" : "start"} type="date" required defaultValue={modal === "bill" ? selected?.due_date : selected?.start_date} /></label></div>
+        {modal === "recurrence" && <><div className="two-cols"><label>Tipo<select name="type" defaultValue={selected?.recurrence_type ?? "expense"}><option value="expense">Despesa</option><option value="income">Receita</option></select></label><label>Frequência<select name="frequency" defaultValue={selected?.frequency ?? "monthly"}><option value="monthly">Mensal</option><option value="weekly">Semanal</option><option value="yearly">Anual</option></select></label></div><input type="hidden" name="amountMode" value={selected?.amount_mode ?? "fixed"} /></>}
+        <label>Categoria<select name="category" defaultValue={selected?.category_id ?? ""}><option value="">Sem categoria</option>{options.categories.filter((item: any) => item.is_active !== false).map((item: any) => <option value={item.id} key={item.id}>{item.name}</option>)}</select><Link className="field-link" to="/categories">+ Criar categoria</Link></label>
+        <label>{modal === "bill" ? "Conta prevista para pagamento" : "Conta financeira habitual"}<select name="account" defaultValue={selected?.account_id ?? ""}><option value="">Definir depois</option>{options.accounts.map((item: any) => <option value={item.id} key={item.id}>{item.name}</option>)}</select></label>
+        {modal === "recurrence" && <label>Cartão habitual<select name="card" defaultValue={selected?.card_id ?? ""}><option value="">Nenhum</option>{options.cards.map((item: any) => <option value={item.id} key={item.id}>{item.name}</option>)}</select></label>}
+        {modal === "bill" && <label>Observações<textarea name="notes" defaultValue={selected?.notes ?? ""} /></label>}
+        {error && <ErrorMessage>{error}</ErrorMessage>}<button className="button primary">Salvar</button>
+      </form>
+    </Modal>}
+
+    {modal === "pay" && selected && <Modal title="Confirmar pagamento" description="O saldo da conta financeira será validado antes da confirmação." onClose={close}>
+      <form className="form-grid" onSubmit={pay}>
+        <label>Pagar usando<select name="account" required><option value="">Selecione uma conta financeira</option>{options.accounts.map((item: any) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
+        <div className="two-cols"><label>Valor<input name="amount" type="number" step=".01" min=".01" defaultValue={selected.amount} required /></label><label>Data<input name="date" type="date" defaultValue={today} required /></label></div>
+        <label>Comprovante opcional<input name="receipt" type="file" accept={receiptAccept} /></label>
+        <small className="form-note">JPG, PNG, WebP ou PDF, até 10 MB.</small>
+        {error && <ErrorMessage>{error}</ErrorMessage>}<button className="button primary">Confirmar pagamento</button>
+      </form>
+    </Modal>}
+  </>;
+}
