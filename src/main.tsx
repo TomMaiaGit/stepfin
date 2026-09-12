@@ -6,6 +6,7 @@ import { AuthProvider } from "./state/AuthContext";
 import "./styles.css";
 import "./enhancements.css";
 import "./adaptations.css";
+import "./brand.css";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
