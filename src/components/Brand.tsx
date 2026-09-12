@@ -1,3 +1,3 @@
 export function Brand({ compact = false }: { compact?: boolean }) {
-  return <div className="brand" aria-label="StepFin"><span className="brand-mark">S</span>{!compact && <span>StepFin</span>}</div>;
+  return <div className="brand" aria-label="StepFin"><svg className="brand-mark" viewBox="0 0 48 48" aria-hidden="true"><rect width="48" height="48" rx="14"/><path d="M14 29.5c3.4 2.7 6.9 4 10.6 4 4.1 0 6.4-1.5 6.4-3.8 0-2-1.7-3.1-6.8-4.1-7.1-1.4-10.1-4-10.1-8.8 0-5.3 4.5-8.8 11.3-8.8 4.5 0 8.5 1.3 11.6 3.8l-3.8 5.2c-2.7-1.9-5.4-2.8-8-2.8-3.4 0-5.4 1.2-5.4 3.2 0 1.9 1.7 2.8 6.9 3.9 7 1.5 10 4.2 10 9 0 5.7-4.6 9.4-12.3 9.4-5.4 0-10.4-1.8-14.4-5.2l4-5Z"/><path className="brand-trend" d="m29 8 5-5 5 5"/></svg>{!compact && <span className="brand-name">Step<span>Fin</span></span>}</div>;
 }

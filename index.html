@@ -5,6 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#071b18" />
     <meta name="description" content="StepFin — finanças pessoais e familiares." />
+    <script>
+      (() => {
+        const saved = localStorage.getItem("stepfin-theme");
+        const theme = saved || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+        document.documentElement.dataset.theme = theme;
+        document.documentElement.style.colorScheme = theme;
+      })();
+    </script>
     <title>StepFin</title>
   </head>
   <body>
